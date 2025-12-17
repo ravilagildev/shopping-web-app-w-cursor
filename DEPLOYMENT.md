@@ -90,17 +90,19 @@ docker build -t gifts-backend .
 ```
 
 ## 5) Run backend container
-Choose secrets:
+Choose secrets and CORS origin:
 ```bash
 APP_USERNAME=admin
 APP_PASSWORD=changeMe
 JWT_SECRET=please-change-to-long-random-256-bit
+CORS_ALLOWED_ORIGINS=http://$BUCKET.s3-website-$REGION.amazonaws.com  # Your S3 bucket URL
 
 docker run -d --name gifts-backend \
   -p 8080:8080 \
   -e APP_USERNAME="$APP_USERNAME" \
   -e APP_PASSWORD="$APP_PASSWORD" \
   -e JWT_SECRET="$JWT_SECRET" \
+  -e CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
   --restart unless-stopped \
   gifts-backend
 ```
@@ -115,6 +117,7 @@ docker run -d --name gifts-backend \
   -e APP_USERNAME="$APP_USERNAME" \
   -e APP_PASSWORD="$APP_PASSWORD" \
   -e JWT_SECRET="$JWT_SECRET" \
+  -e CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
   -v /var/lib/gifts-data:/data \
   --restart unless-stopped \
   gifts-backend

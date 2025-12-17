@@ -78,7 +78,7 @@ This application follows a **three-tier architecture** with clear separation of 
 **Design Decisions:**
 - **JWT over Sessions**: Stateless, scalable, works well with containerized deployments
 - **Single User Authentication**: Simple credential-based auth (can be extended to multi-user)
-- **CORS Configuration**: Allows frontend origin, restricts cross-origin requests
+- **CORS Configuration**: Configurable via application properties with profile support (local/prod)
 - **Stateless Sessions**: No server-side session storage, reduces memory footprint
 - **Password Encoding**: BCrypt support for hashed passwords (optional)
 
@@ -252,7 +252,8 @@ This application follows a **three-tier architecture** with clear separation of 
 
 ### Local Development
 - Backend uses H2 in-memory database by default (data lost on restart)
-- CORS configured for `http://localhost:5173` and `http://localhost:3000`
+- CORS configured via `application.properties` (defaults to `http://localhost:5173` and `http://localhost:3000`)
+- Can use `application-local.properties` for explicit local profile configuration
 - Frontend Vite dev server proxies API requests to backend
 - H2 console available at `http://localhost:8080/h2-console` for database inspection
 
