@@ -297,6 +297,148 @@
   font-size: 1.5rem;
 }
 
+/* Coffee-specific styles */
+.roaster-location {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+.gift-item.fresh {
+  border-left: 4px solid #4CAF50;
+}
+
+.gift-item.aging {
+  border-left: 4px solid #ff9800;
+}
+
+.gift-item.stale {
+  border-left: 4px solid #f44336;
+}
+
+.gift-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.coffee-origin {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+.coffee-details {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.roast-level {
+  background: #e0e0e0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.freshness {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.freshness.fresh {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.freshness.aging {
+  background: #ffe0b2;
+  color: #e65100;
+}
+
+.freshness.stale {
+  background: #ffcdd2;
+  color: #c62828;
+}
+
+.gift-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  margin-right: 10px;
+}
+
+.coffee-price {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.alerts {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.alert {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-warning {
+  border-left: 4px solid #ff9800;
+}
+
+.alert-info {
+  border-left: 4px solid #2196F3;
+}
+
+.alert h3 {
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.alert ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.alert li {
+  padding: 5px 0;
+  color: #666;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s;
+  resize: vertical;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
 @media (max-width: 768px) {
   .persons-grid {
     grid-template-columns: 1fr;
@@ -308,6 +450,21 @@
 
   .header h1 {
     font-size: 2rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gift-meta {
+    align-items: flex-start;
+    margin-right: 0;
+    margin-top: 10px;
   }
 }
 

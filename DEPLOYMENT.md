@@ -17,7 +17,7 @@ These steps deploy the app without pushing to a remote repo. Replace ALL_CAPS pl
 ## 1) Frontend → S3
 ```bash
 REGION=us-east-1
-BUCKET=my-gifts-frontend-$(date +%s)
+BUCKET=my-coffee-tracker-frontend-$(date +%s)
 
 # Create bucket
 aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
@@ -40,7 +40,7 @@ aws s3 website s3://"$BUCKET"/ --index-document index.html --error-document inde
 ```bash
 REGION=us-east-1
 KEY_NAME=my-keypair
-SEC_GROUP_NAME=gifts-sg
+SEC_GROUP_NAME=coffee-tracker-sg
 
 # Latest Amazon Linux 2023 x86_64 AMI
 AMI_ID=$(aws ec2 describe-images --owners amazon \

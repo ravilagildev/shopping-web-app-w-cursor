@@ -31,7 +31,7 @@ export default function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>🎄 Christmas Gifts Tracker</h1>
+        <h1>☕ Specialty Coffee Tracker</h1>
         <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">

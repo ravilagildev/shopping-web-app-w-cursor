@@ -1,6 +1,6 @@
-# Christmas Gifts Tracker 🎄
+# Specialty Coffee Tracker ☕
 
-A web application to track Christmas gifts for your family, including budget management.
+A web application to track your specialty coffee collection, including roasters, roast dates, inventory management, and freshness tracking.
 
 ## Project Structure
 
@@ -55,7 +55,7 @@ This application follows a **three-tier architecture** with clear separation of 
 - **Functional Components**: Modern React with hooks (useState, useEffect)
 - **TypeScript**: Type safety throughout the application
 - **Axios Interceptors**: Centralized token management and error handling
-- **Component Composition**: Reusable form components (PersonForm, GiftForm)
+- **Component Composition**: Reusable form components (RoasterForm, CoffeeForm)
 
 **Design Decisions:**
 - **React 18**: Latest stable version with concurrent features
@@ -86,7 +86,7 @@ This application follows a **three-tier architecture** with clear separation of 
 
 **Current Implementation:**
 - **H2 In-Memory**: Default for local development (data lost on restart)
-- **H2 File-Based**: Optional via `SPRING_DATASOURCE_URL=jdbc:h2:/data/christmasgifts` (persists data)
+- **H2 File-Based**: Optional via `SPRING_DATASOURCE_URL=jdbc:h2:/data/coffeetracker` (persists data)
 - **Production Ready**: Can switch to PostgreSQL/MySQL by changing datasource configuration
 
 **Design Decisions:**
@@ -142,7 +142,7 @@ This application follows a **three-tier architecture** with clear separation of 
 3. The backend will start on `http://localhost:8080`
 
 4. You can access the H2 database console at `http://localhost:8080/h2-console`
-   - JDBC URL: `jdbc:h2:mem:christmasgifts`
+   - JDBC URL: `jdbc:h2:mem:coffeetracker`
    - Username: `sa`
    - Password: (leave empty)
 
@@ -175,32 +175,36 @@ This application follows a **three-tier architecture** with clear separation of 
 
 ## Features
 
-- ✅ Add and manage family members (persons)
-- ✅ Add gifts for each person
-- ✅ Track total budget and spending
-- ✅ View remaining budget
-- ✅ Edit and delete persons and gifts
-- ✅ Beautiful, responsive UI
+- ✅ Add and manage coffee roasters
+- ✅ Track coffee bags with detailed information (roast date, origin, processing method, etc.)
+- ✅ Monitor inventory (total weight, bags, average price per gram)
+- ✅ Track freshness (days since roast with color-coded indicators)
+- ✅ Low stock alerts (coffees with < 20% remaining)
+- ✅ Aging coffee alerts (coffees older than 30 days since roast)
+- ✅ Consume coffee functionality (reduce weight as you use it)
+- ✅ Track spending per roaster
+- ✅ Beautiful, responsive UI with coffee-themed design
 
 ## API Endpoints
 
-### Persons
-- `GET /api/persons` - Get all persons
-- `GET /api/persons/{id}` - Get person by ID
-- `POST /api/persons` - Create a new person
-- `PUT /api/persons/{id}` - Update a person
-- `DELETE /api/persons/{id}` - Delete a person
+### Roasters
+- `GET /api/roasters` - Get all roasters
+- `GET /api/roasters/{id}` - Get roaster by ID
+- `POST /api/roasters` - Create a new roaster
+- `PUT /api/roasters/{id}` - Update a roaster
+- `DELETE /api/roasters/{id}` - Delete a roaster
 
-### Gifts
-- `GET /api/gifts` - Get all gifts
-- `GET /api/gifts/{id}` - Get gift by ID
-- `GET /api/gifts/person/{personId}` - Get gifts for a person
-- `POST /api/gifts` - Create a new gift
-- `PUT /api/gifts/{id}` - Update a gift
-- `DELETE /api/gifts/{id}` - Delete a gift
+### Coffees
+- `GET /api/coffees` - Get all coffees
+- `GET /api/coffees/{id}` - Get coffee by ID
+- `GET /api/coffees/roaster/{roasterId}` - Get coffees for a roaster
+- `POST /api/coffees` - Create a new coffee
+- `PUT /api/coffees/{id}` - Update a coffee
+- `POST /api/coffees/{id}/consume?amount={grams}` - Consume coffee (reduce weight)
+- `DELETE /api/coffees/{id}` - Delete a coffee
 
-### Budget
-- `GET /api/budget/summary?totalBudget={amount}` - Get budget summary
+### Inventory
+- `GET /api/inventory/summary` - Get inventory summary (total weight, bags, low stock, aging coffees)
 
 ## Technology Stack
 

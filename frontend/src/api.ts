@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Person, Gift, BudgetSummary } from './types';
+import { Roaster, Coffee, InventorySummary, RoastLevel } from './types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -41,30 +41,54 @@ export const authApi = {
   isAuthenticated: () => !!localStorage.getItem('token'),
 };
 
-// Person API
-export const personApi = {
-  getAll: () => api.get<Person[]>('/persons'),
-  getById: (id: number) => api.get<Person>(`/persons/${id}`),
-  create: (person: { name: string }) => api.post<Person>('/persons', person),
-  update: (id: number, person: { name: string }) => api.put<Person>(`/persons/${id}`, person),
-  delete: (id: number) => api.delete(`/persons/${id}`),
+// Roaster API
+export const roasterApi = {
+  getAll: () => api.get<Roaster[]>('/roasters'),
+  getById: (id: number) => api.get<Roaster>(`/roasters/${id}`),
+  create: (roaster: { name: string; location?: string; website?: string; notes?: string }) =>
+    api.post<Roaster>('/roasters', roaster),
+  update: (id: number, roaster: { name: string; location?: string; website?: string; notes?: string }) =>
+    api.put<Roaster>(`/roasters/${id}`, roaster),
+  delete: (id: number) => api.delete(`/roasters/${id}`),
 };
 
-// Gift API
-export const giftApi = {
-  getAll: () => api.get<Gift[]>('/gifts'),
-  getById: (id: number) => api.get<Gift>(`/gifts/${id}`),
-  getByPersonId: (personId: number) => api.get<Gift[]>(`/gifts/person/${personId}`),
-  create: (gift: { description: string; price: number; personId: number }) =>
-    api.post<Gift>('/gifts', gift),
-  update: (id: number, gift: { description: string; price: number; personId: number }) =>
-    api.put<Gift>(`/gifts/${id}`, gift),
-  delete: (id: number) => api.delete(`/gifts/${id}`),
+// Coffee API
+export const coffeeApi = {
+  getAll: () => api.get<Coffee[]>('/coffees'),
+  getById: (id: number) => api.get<Coffee>(`/coffees/${id}`),
+  getByRoasterId: (roasterId: number) => api.get<Coffee[]>(`/coffees/roaster/${roasterId}`),
+  create: (coffee: {
+    coffeeName: string;
+    roastDate: string;
+    purchaseDate: string;
+    initialWeight: number;
+    currentWeight?: number;
+    origin?: string;
+    roastLevel?: RoastLevel;
+    processingMethod?: string;
+    price?: number;
+    notes?: string;
+    roasterId: number;
+  }) => api.post<Coffee>('/coffees', coffee),
+  update: (id: number, coffee: {
+    coffeeName: string;
+    roastDate: string;
+    purchaseDate: string;
+    initialWeight: number;
+    currentWeight: number;
+    origin?: string;
+    roastLevel?: RoastLevel;
+    processingMethod?: string;
+    price?: number;
+    notes?: string;
+    roasterId: number;
+  }) => api.put<Coffee>(`/coffees/${id}`, coffee),
+  consume: (id: number, amount: number) =>
+    api.post<Coffee>(`/coffees/${id}/consume?amount=${amount}`),
+  delete: (id: number) => api.delete(`/coffees/${id}`),
 };
 
-// Budget API
-export const budgetApi = {
-  getSummary: (totalBudget: number = 1000) =>
-    api.get<BudgetSummary>(`/budget/summary?totalBudget=${totalBudget}`),
+// Inventory API
+export const inventoryApi = {
+  getSummary: () => api.get<InventorySummary>('/inventory/summary'),
 };
-
