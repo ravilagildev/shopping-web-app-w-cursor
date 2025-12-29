@@ -5,6 +5,7 @@ import com.avilachehab.christmasgifts.model.Coffee;
 import com.avilachehab.christmasgifts.model.Roaster;
 import com.avilachehab.christmasgifts.repository.RoasterRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,12 +16,17 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RoasterServiceTest {
@@ -56,8 +62,9 @@ class RoasterServiceTest {
     }
 
     @Test
-    void getAllRoasters_ShouldReturnAllRoasters() {
-        // Given
+    @DisplayName("Should return all roasters when getAllRoasters is called")
+    void getAllRoasters_validRequest_returnsAllRoasters() {
+        // Arrange
         Roaster roaster2 = new Roaster();
         roaster2.setId(2L);
         roaster2.setName("Stumptown");
@@ -65,50 +72,66 @@ class RoasterServiceTest {
 
         when(roasterRepository.findAll()).thenReturn(Arrays.asList(testRoaster, roaster2));
 
-        // When
+        // Act
         List<RoasterDto> result = roasterService.getAllRoasters();
 
-        // Then
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Blue Bottle", result.get(0).getName());
-        assertEquals("Stumptown", result.get(1).getName());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .hasSize(2)
+                .extracting(RoasterDto::getName)
+                .containsExactly("Blue Bottle", "Stumptown");
         verify(roasterRepository, times(1)).findAll();
     }
 
     @Test
-    void getRoasterById_WhenExists_ShouldReturnRoaster() {
-        // Given
+    @DisplayName("Should return empty list when no roasters exist")
+    void getAllRoasters_noRoasters_returnsEmptyList() {
+        // Arrange
+        when(roasterRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // Act
+        List<RoasterDto> result = roasterService.getAllRoasters();
+
+        // Assert
+        assertThat(result).isEmpty();
+        verify(roasterRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Should return roaster when valid ID provided")
+    void getRoasterById_validId_returnsRoaster() {
+        // Arrange
         when(roasterRepository.findById(1L)).thenReturn(Optional.of(testRoaster));
 
-        // When
+        // Act
         RoasterDto result = roasterService.getRoasterById(1L);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Blue Bottle", result.getName());
-        assertEquals("Oakland, CA", result.getLocation());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(RoasterDto::getId, RoasterDto::getName, RoasterDto::getLocation)
+                .containsExactly(1L, "Blue Bottle", "Oakland, CA");
         verify(roasterRepository, times(1)).findById(1L);
     }
 
     @Test
-    void getRoasterById_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when roaster ID not found")
+    void getRoasterById_nonExistentId_throwsException() {
+        // Arrange
         when(roasterRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            roasterService.getRoasterById(999L);
-        });
-
-        assertEquals("Roaster not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> roasterService.getRoasterById(999L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Roaster not found with id: 999");
         verify(roasterRepository, times(1)).findById(999L);
     }
 
     @Test
-    void createRoaster_ShouldCreateAndReturnRoaster() {
-        // Given
+    @DisplayName("Should create and return roaster successfully")
+    void createRoaster_validDto_createsAndReturnsRoaster() {
+        // Arrange
         RoasterDto dto = new RoasterDto();
         dto.setName("New Roaster");
         dto.setLocation("Portland, OR");
@@ -125,20 +148,21 @@ class RoasterServiceTest {
 
         when(roasterRepository.save(any(Roaster.class))).thenReturn(savedRoaster);
 
-        // When
+        // Act
         RoasterDto result = roasterService.createRoaster(dto);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(2L, result.getId());
-        assertEquals("New Roaster", result.getName());
-        assertEquals("Portland, OR", result.getLocation());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(RoasterDto::getId, RoasterDto::getName, RoasterDto::getLocation)
+                .containsExactly(2L, "New Roaster", "Portland, OR");
         verify(roasterRepository, times(1)).save(any(Roaster.class));
     }
 
     @Test
-    void updateRoaster_WhenExists_ShouldUpdateAndReturnRoaster() {
-        // Given
+    @DisplayName("Should update existing roaster successfully")
+    void updateRoaster_validIdAndDto_updatesAndReturnsRoaster() {
+        // Arrange
         RoasterDto dto = new RoasterDto();
         dto.setName("Updated Roaster");
         dto.setLocation("Seattle, WA");
@@ -146,64 +170,64 @@ class RoasterServiceTest {
         when(roasterRepository.findById(1L)).thenReturn(Optional.of(testRoaster));
         when(roasterRepository.save(any(Roaster.class))).thenReturn(testRoaster);
 
-        // When
+        // Act
         RoasterDto result = roasterService.updateRoaster(1L, dto);
 
-        // Then
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         verify(roasterRepository, times(1)).findById(1L);
         verify(roasterRepository, times(1)).save(any(Roaster.class));
     }
 
     @Test
-    void updateRoaster_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when updating non-existent roaster")
+    void updateRoaster_nonExistentId_throwsException() {
+        // Arrange
         RoasterDto dto = new RoasterDto();
         dto.setName("Updated Roaster");
 
         when(roasterRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            roasterService.updateRoaster(999L, dto);
-        });
-
-        assertEquals("Roaster not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> roasterService.updateRoaster(999L, dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Roaster not found with id: 999");
         verify(roasterRepository, times(1)).findById(999L);
         verify(roasterRepository, never()).save(any(Roaster.class));
     }
 
     @Test
-    void deleteRoaster_WhenExists_ShouldDelete() {
-        // Given
+    @DisplayName("Should delete existing roaster successfully")
+    void deleteRoaster_validId_deletesRoaster() {
+        // Arrange
         when(roasterRepository.existsById(1L)).thenReturn(true);
 
-        // When
+        // Act
         roasterService.deleteRoaster(1L);
 
-        // Then
+        // Assert
         verify(roasterRepository, times(1)).existsById(1L);
         verify(roasterRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void deleteRoaster_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when deleting non-existent roaster")
+    void deleteRoaster_nonExistentId_throwsException() {
+        // Arrange
         when(roasterRepository.existsById(999L)).thenReturn(false);
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            roasterService.deleteRoaster(999L);
-        });
-
-        assertEquals("Roaster not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> roasterService.deleteRoaster(999L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Roaster not found with id: 999");
         verify(roasterRepository, times(1)).existsById(999L);
         verify(roasterRepository, never()).deleteById(any());
     }
 
     @Test
-    void convertToDto_ShouldCalculateTotalSpent() {
-        // Given
+    @DisplayName("Should correctly calculate total spent across coffees")
+    void convertToDto_withCoffees_calculatesTotalSpent() {
+        // Arrange
         Coffee coffee1 = new Coffee();
         coffee1.setPrice(BigDecimal.valueOf(18.50));
         coffee1.setRoaster(testRoaster);
@@ -215,18 +239,23 @@ class RoasterServiceTest {
         testRoaster.setCoffees(Arrays.asList(coffee1, coffee2));
         when(roasterRepository.findAll()).thenReturn(List.of(testRoaster));
 
-        // When
+        // Act
         List<RoasterDto> result = roasterService.getAllRoasters();
 
-        // Then
-        assertEquals(1, result.size());
-        assertEquals(BigDecimal.valueOf(40.50), result.get(0).getTotalSpent());
-        assertEquals(2, result.get(0).getCoffeeCount());
+        // Assert
+        assertThat(result)
+                .hasSize(1)
+                .first()
+                .satisfies(roaster -> {
+                    assertThat(roaster.getTotalSpent()).isEqualByComparingTo(BigDecimal.valueOf(40.50));
+                    assertThat(roaster.getCoffeeCount()).isEqualTo(2);
+                });
     }
 
     @Test
-    void convertToDto_ShouldHandleNullPrices() {
-        // Given
+    @DisplayName("Should handle null prices when calculating total spent")
+    void convertToDto_withNullPrices_calculatesCorrectTotal() {
+        // Arrange
         Coffee coffee1 = new Coffee();
         coffee1.setPrice(BigDecimal.valueOf(18.50));
         coffee1.setRoaster(testRoaster);
@@ -238,13 +267,36 @@ class RoasterServiceTest {
         testRoaster.setCoffees(Arrays.asList(coffee1, coffee2));
         when(roasterRepository.findAll()).thenReturn(List.of(testRoaster));
 
-        // When
+        // Act
         List<RoasterDto> result = roasterService.getAllRoasters();
 
-        // Then
-        assertEquals(1, result.size());
-        assertEquals(BigDecimal.valueOf(18.50), result.get(0).getTotalSpent());
-        assertEquals(2, result.get(0).getCoffeeCount());
+        // Assert
+        assertThat(result)
+                .hasSize(1)
+                .first()
+                .satisfies(roaster -> {
+                    assertThat(roaster.getTotalSpent()).isEqualByComparingTo(BigDecimal.valueOf(18.50));
+                    assertThat(roaster.getCoffeeCount()).isEqualTo(2);
+                });
+    }
+
+    @Test
+    @DisplayName("Should return zero total spent when roaster has no coffees")
+    void convertToDto_noCoffees_returnsZeroTotalSpent() {
+        // Arrange
+        testRoaster.setCoffees(Collections.emptyList());
+        when(roasterRepository.findAll()).thenReturn(List.of(testRoaster));
+
+        // Act
+        List<RoasterDto> result = roasterService.getAllRoasters();
+
+        // Assert
+        assertThat(result)
+                .hasSize(1)
+                .first()
+                .satisfies(roaster -> {
+                    assertThat(roaster.getTotalSpent()).isEqualByComparingTo(BigDecimal.ZERO);
+                    assertThat(roaster.getCoffeeCount()).isZero();
+                });
     }
 }
-

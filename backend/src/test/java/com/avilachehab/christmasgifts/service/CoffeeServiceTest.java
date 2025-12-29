@@ -7,6 +7,7 @@ import com.avilachehab.christmasgifts.model.RoastLevel;
 import com.avilachehab.christmasgifts.repository.CoffeeRepository;
 import com.avilachehab.christmasgifts.repository.RoasterRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,12 +17,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CoffeeServiceTest {
@@ -74,8 +80,9 @@ class CoffeeServiceTest {
     }
 
     @Test
-    void getAllCoffees_ShouldReturnAllCoffees() {
-        // Given
+    @DisplayName("Should return all coffees when getAllCoffees is called")
+    void getAllCoffees_validRequest_returnsAllCoffees() {
+        // Arrange
         Coffee coffee2 = new Coffee();
         coffee2.setId(2L);
         coffee2.setCoffeeName("Colombian");
@@ -83,78 +90,114 @@ class CoffeeServiceTest {
 
         when(coffeeRepository.findAll()).thenReturn(Arrays.asList(testCoffee, coffee2));
 
-        // When
+        // Act
         List<CoffeeDto> result = coffeeService.getAllCoffees();
 
-        // Then
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Ethiopian Yirgacheffe", result.get(0).getCoffeeName());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .hasSize(2)
+                .extracting(CoffeeDto::getCoffeeName)
+                .containsExactly("Ethiopian Yirgacheffe", "Colombian");
         verify(coffeeRepository, times(1)).findAll();
     }
 
     @Test
-    void getCoffeeById_WhenExists_ShouldReturnCoffee() {
-        // Given
+    @DisplayName("Should return empty list when no coffees exist")
+    void getAllCoffees_noCoffees_returnsEmptyList() {
+        // Arrange
+        when(coffeeRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // Act
+        List<CoffeeDto> result = coffeeService.getAllCoffees();
+
+        // Assert
+        assertThat(result).isEmpty();
+        verify(coffeeRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Should return coffee when valid ID provided")
+    void getCoffeeById_validId_returnsCoffee() {
+        // Arrange
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.getCoffeeById(1L);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Ethiopian Yirgacheffe", result.getCoffeeName());
-        assertEquals(RoastLevel.LIGHT, result.getRoastLevel());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(CoffeeDto::getId, CoffeeDto::getCoffeeName, CoffeeDto::getRoastLevel)
+                .containsExactly(1L, "Ethiopian Yirgacheffe", RoastLevel.LIGHT);
         verify(coffeeRepository, times(1)).findById(1L);
     }
 
     @Test
-    void getCoffeeById_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when coffee ID not found")
+    void getCoffeeById_nonExistentId_throwsException() {
+        // Arrange
         when(coffeeRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.getCoffeeById(999L);
-        });
-
-        assertEquals("Coffee not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.getCoffeeById(999L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Coffee not found with id: 999");
     }
 
     @Test
-    void getCoffeesByRoasterId_ShouldReturnCoffeesForRoaster() {
-        // Given
+    @DisplayName("Should return coffees for specific roaster ID")
+    void getCoffeesByRoasterId_validRoasterId_returnsCoffees() {
+        // Arrange
         when(coffeeRepository.findByRoasterId(1L)).thenReturn(List.of(testCoffee));
 
-        // When
+        // Act
         List<CoffeeDto> result = coffeeService.getCoffeesByRoasterId(1L);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Ethiopian Yirgacheffe", result.get(0).getCoffeeName());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .hasSize(1)
+                .first()
+                .extracting(CoffeeDto::getCoffeeName)
+                .isEqualTo("Ethiopian Yirgacheffe");
         verify(coffeeRepository, times(1)).findByRoasterId(1L);
     }
 
     @Test
-    void createCoffee_ShouldCreateAndReturnCoffee() {
-        // Given
+    @DisplayName("Should return empty list when roaster has no coffees")
+    void getCoffeesByRoasterId_noCoffe_returnsEmptyList() {
+        // Arrange
+        when(coffeeRepository.findByRoasterId(1L)).thenReturn(Collections.emptyList());
+
+        // Act
+        List<CoffeeDto> result = coffeeService.getCoffeesByRoasterId(1L);
+
+        // Assert
+        assertThat(result).isEmpty();
+        verify(coffeeRepository, times(1)).findByRoasterId(1L);
+    }
+
+    @Test
+    @DisplayName("Should create and return coffee successfully")
+    void createCoffee_validDto_createsAndReturnsCoffee() {
+        // Arrange
         when(roasterRepository.findById(1L)).thenReturn(Optional.of(testRoaster));
         when(coffeeRepository.save(any(Coffee.class))).thenReturn(testCoffee);
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.createCoffee(testCoffeeDto);
 
-        // Then
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         verify(roasterRepository, times(1)).findById(1L);
         verify(coffeeRepository, times(1)).save(any(Coffee.class));
     }
 
     @Test
-    void createCoffee_WhenCurrentWeightNotProvided_ShouldUseInitialWeight() {
-        // Given
+    @DisplayName("Should use initial weight when current weight not provided")
+    void createCoffee_nullCurrentWeight_usesInitialWeight() {
+        // Arrange
         testCoffeeDto.setCurrentWeight(null);
         when(roasterRepository.findById(1L)).thenReturn(Optional.of(testRoaster));
         when(coffeeRepository.save(any(Coffee.class))).thenAnswer(invocation -> {
@@ -163,161 +206,178 @@ class CoffeeServiceTest {
             return coffee;
         });
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.createCoffee(testCoffeeDto);
 
-        // Then
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         verify(coffeeRepository, times(1)).save(any(Coffee.class));
     }
 
     @Test
-    void createCoffee_WhenRoasterNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when roaster not found during creation")
+    void createCoffee_nonExistentRoaster_throwsException() {
+        // Arrange
         when(roasterRepository.findById(999L)).thenReturn(Optional.empty());
         testCoffeeDto.setRoasterId(999L);
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.createCoffee(testCoffeeDto);
-        });
-
-        assertEquals("Roaster not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.createCoffee(testCoffeeDto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Roaster not found with id: 999");
         verify(coffeeRepository, never()).save(any(Coffee.class));
     }
 
     @Test
-    void updateCoffee_WhenExists_ShouldUpdateAndReturnCoffee() {
-        // Given
+    @DisplayName("Should update existing coffee successfully")
+    void updateCoffee_validIdAndDto_updatesAndReturnsCoffee() {
+        // Arrange
         testCoffeeDto.setCoffeeName("Updated Coffee Name");
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
         when(coffeeRepository.save(any(Coffee.class))).thenReturn(testCoffee);
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.updateCoffee(1L, testCoffeeDto);
 
-        // Then
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         verify(coffeeRepository, times(1)).findById(1L);
         verify(coffeeRepository, times(1)).save(any(Coffee.class));
     }
 
     @Test
-    void updateCoffee_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when updating non-existent coffee")
+    void updateCoffee_nonExistentId_throwsException() {
+        // Arrange
         when(coffeeRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.updateCoffee(999L, testCoffeeDto);
-        });
-
-        assertEquals("Coffee not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.updateCoffee(999L, testCoffeeDto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Coffee not found with id: 999");
         verify(coffeeRepository, never()).save(any(Coffee.class));
     }
 
     @Test
-    void consumeCoffee_WhenEnoughAvailable_ShouldReduceWeight() {
-        // Given
+    @DisplayName("Should reduce weight when consuming coffee")
+    void consumeCoffee_validAmount_reducesWeight() {
+        // Arrange
         BigDecimal consumeAmount = BigDecimal.valueOf(20);
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
-        when(coffeeRepository.save(any(Coffee.class))).thenAnswer(invocation -> {
-            Coffee coffee = invocation.getArgument(0);
-            return coffee;
-        });
+        when(coffeeRepository.save(any(Coffee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.consumeCoffee(1L, consumeAmount);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(BigDecimal.valueOf(180), result.getCurrentWeight());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(CoffeeDto::getCurrentWeight)
+                .isEqualTo(BigDecimal.valueOf(180));
         verify(coffeeRepository, times(1)).save(any(Coffee.class));
     }
 
     @Test
-    void consumeCoffee_WhenNotEnoughAvailable_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when consuming more than available")
+    void consumeCoffee_excessiveAmount_throwsException() {
+        // Arrange
         BigDecimal consumeAmount = BigDecimal.valueOf(300); // More than available (200)
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.consumeCoffee(1L, consumeAmount);
-        });
-
-        assertEquals("Cannot consume more coffee than available", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.consumeCoffee(1L, consumeAmount))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Cannot consume more coffee than available");
         verify(coffeeRepository, never()).save(any(Coffee.class));
     }
 
     @Test
-    void consumeCoffee_WhenCoffeeNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when consuming from non-existent coffee")
+    void consumeCoffee_nonExistentId_throwsException() {
+        // Arrange
         when(coffeeRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.consumeCoffee(999L, BigDecimal.valueOf(20));
-        });
-
-        assertEquals("Coffee not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.consumeCoffee(999L, BigDecimal.valueOf(20)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Coffee not found with id: 999");
     }
 
     @Test
-    void deleteCoffee_WhenExists_ShouldDelete() {
-        // Given
+    @DisplayName("Should handle consuming exactly all remaining coffee")
+    void consumeCoffee_exactAmount_depletesCoffee() {
+        // Arrange
+        BigDecimal consumeAmount = BigDecimal.valueOf(200); // Exactly the current weight
+        when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
+        when(coffeeRepository.save(any(Coffee.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        CoffeeDto result = coffeeService.consumeCoffee(1L, consumeAmount);
+
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(CoffeeDto::getCurrentWeight)
+                .isEqualTo(BigDecimal.ZERO);
+        verify(coffeeRepository, times(1)).save(any(Coffee.class));
+    }
+
+    @Test
+    @DisplayName("Should delete existing coffee successfully")
+    void deleteCoffee_validId_deletesCoffee() {
+        // Arrange
         when(coffeeRepository.existsById(1L)).thenReturn(true);
 
-        // When
+        // Act
         coffeeService.deleteCoffee(1L);
 
-        // Then
+        // Assert
         verify(coffeeRepository, times(1)).existsById(1L);
         verify(coffeeRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void deleteCoffee_WhenNotExists_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when deleting non-existent coffee")
+    void deleteCoffee_nonExistentId_throwsException() {
+        // Arrange
         when(coffeeRepository.existsById(999L)).thenReturn(false);
 
-        // When/Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            coffeeService.deleteCoffee(999L);
-        });
-
-        assertEquals("Coffee not found with id: 999", exception.getMessage());
+        // Act & Assert
+        assertThatThrownBy(() -> coffeeService.deleteCoffee(999L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Coffee not found with id: 999");
         verify(coffeeRepository, never()).deleteById(any());
     }
 
     @Test
-    void convertToDto_ShouldCalculateDaysSinceRoast() {
-        // Given
+    @DisplayName("Should correctly calculate days since roast")
+    void convertToDto_withRoastDate_calculatesDaysSinceRoast() {
+        // Arrange
         LocalDate roastDate = LocalDate.now().minusDays(10);
         testCoffee.setRoastDate(roastDate);
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.getCoffeeById(1L);
 
-        // Then
-        assertNotNull(result.getDaysSinceRoast());
-        assertEquals(10L, result.getDaysSinceRoast());
+        // Assert
+        assertThat(result.getDaysSinceRoast()).isEqualTo(10L);
     }
 
     @Test
-    void convertToDto_ShouldCalculatePercentageRemaining() {
-        // Given
+    @DisplayName("Should correctly calculate percentage remaining")
+    void convertToDto_withWeights_calculatesPercentageRemaining() {
+        // Arrange
         testCoffee.setInitialWeight(BigDecimal.valueOf(250));
         testCoffee.setCurrentWeight(BigDecimal.valueOf(125));
         when(coffeeRepository.findById(1L)).thenReturn(Optional.of(testCoffee));
 
-        // When
+        // Act
         CoffeeDto result = coffeeService.getCoffeeById(1L);
 
-        // Then
-        assertNotNull(result.getPercentageRemaining());
-        assertEquals(0, BigDecimal.valueOf(50.0).compareTo(result.getPercentageRemaining().setScale(1, java.math.RoundingMode.HALF_UP)));
+        // Assert
+        assertThat(result.getPercentageRemaining())
+                .isNotNull()
+                .isEqualByComparingTo(BigDecimal.valueOf(50.0).setScale(1, java.math.RoundingMode.HALF_UP));
     }
 }
-

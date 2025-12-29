@@ -4,6 +4,7 @@ import com.avilachehab.christmasgifts.dto.CoffeeDto;
 import com.avilachehab.christmasgifts.dto.InventorySummaryDto;
 import com.avilachehab.christmasgifts.dto.RoasterDto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,10 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InventoryServiceTest {
@@ -73,96 +77,111 @@ class InventoryServiceTest {
     }
 
     @Test
-    void getInventorySummary_ShouldCalculateTotalWeight() {
-        // Given
+    @DisplayName("Should calculate total weight correctly")
+    void getInventorySummary_withCoffees_calculatesTotalWeight() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertNotNull(result);
-        assertEquals(BigDecimal.valueOf(550), result.getTotalWeight()); // 200 + 50 + 300
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .extracting(InventorySummaryDto::getTotalWeight)
+                .isEqualTo(BigDecimal.valueOf(550)); // 200 + 50 + 300
         verify(coffeeService, times(1)).getAllCoffees();
     }
 
     @Test
-    void getInventorySummary_ShouldCalculateTotalBags() {
-        // Given
+    @DisplayName("Should calculate total bags correctly")
+    void getInventorySummary_withCoffees_calculatesTotalBags() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertEquals(3, result.getTotalBags());
+        // Assert
+        assertThat(result.getTotalBags()).isEqualTo(3);
     }
 
     @Test
-    void getInventorySummary_ShouldCalculateTotalSpent() {
-        // Given
+    @DisplayName("Should calculate total spent correctly")
+    void getInventorySummary_withCoffees_calculatesTotalSpent() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertEquals(BigDecimal.valueOf(63.50), result.getTotalSpent()); // 18.50 + 25.00 + 20.00
+        // Assert
+        assertThat(result.getTotalSpent()).isEqualByComparingTo(BigDecimal.valueOf(63.50)); // 18.50 + 25.00 + 20.00
     }
 
     @Test
-    void getInventorySummary_ShouldCalculateAveragePricePerGram() {
-        // Given
+    @DisplayName("Should calculate average price per gram correctly")
+    void getInventorySummary_withCoffees_calculatesAveragePricePerGram() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertNotNull(result.getAveragePricePerGram());
+        // Assert
         // Total spent: 63.50, Total initial weight: 1050g (250 + 500 + 300)
         // Average: 63.50 / 1050 = 0.060476... which rounds to 0.0605 with 4 decimal places
-        BigDecimal expected = BigDecimal.valueOf(63.50).divide(BigDecimal.valueOf(1050), 4, java.math.RoundingMode.HALF_UP);
-        assertEquals(0, expected.compareTo(result.getAveragePricePerGram()));
+        BigDecimal expected = BigDecimal.valueOf(63.50)
+                .divide(BigDecimal.valueOf(1050), 4, java.math.RoundingMode.HALF_UP);
+        assertThat(result.getAveragePricePerGram()).isEqualByComparingTo(expected);
     }
 
     @Test
-    void getInventorySummary_ShouldIdentifyLowStockCoffees() {
-        // Given
+    @DisplayName("Should identify low stock coffees correctly")
+    void getInventorySummary_withLowStockCoffees_identifiesLowStock() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertNotNull(result.getLowStockCoffees());
-        assertEquals(1, result.getLowStockCoffees().size());
-        assertEquals("Colombian", result.getLowStockCoffees().get(0).getCoffeeName());
+        // Assert
+        assertThat(result.getLowStockCoffees())
+                .isNotNull()
+                .hasSize(1)
+                .first()
+                .extracting(CoffeeDto::getCoffeeName)
+                .isEqualTo("Colombian");
     }
 
     @Test
-    void getInventorySummary_ShouldIdentifyAgingCoffees() {
-        // Given
+    @DisplayName("Should identify aging coffees correctly")
+    void getInventorySummary_withAgingCoffees_identifiesAgingCoffees() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertNotNull(result.getAgingCoffees());
-        assertEquals(1, result.getAgingCoffees().size());
-        assertEquals("Colombian", result.getAgingCoffees().get(0).getCoffeeName());
+        // Assert
+        assertThat(result.getAgingCoffees())
+                .isNotNull()
+                .hasSize(1)
+                .first()
+                .extracting(CoffeeDto::getCoffeeName)
+                .isEqualTo("Colombian");
     }
 
     @Test
-    void getInventorySummary_ShouldExcludeEmptyCoffeesFromLowStock() {
-        // Given
+    @DisplayName("Should exclude empty coffees from low stock list")
+    void getInventorySummary_withEmptyCoffee_excludesFromLowStock() {
+        // Arrange
         CoffeeDto emptyCoffee = new CoffeeDto();
         emptyCoffee.setId(4L);
         emptyCoffee.setCoffeeName("Empty Coffee");
@@ -172,58 +191,116 @@ class InventoryServiceTest {
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3, emptyCoffee));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertEquals(1, result.getLowStockCoffees().size()); // Only coffee2, not emptyCoffee
+        // Assert
+        assertThat(result.getLowStockCoffees()).hasSize(1); // Only coffee2, not emptyCoffee
     }
 
     @Test
-    void getInventorySummary_ShouldHandleNullPrices() {
-        // Given
+    @DisplayName("Should handle null prices when calculating totals")
+    void getInventorySummary_withNullPrices_calculatesCorrectTotal() {
+        // Arrange
         coffee1.setPrice(null);
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertEquals(BigDecimal.valueOf(45.00), result.getTotalSpent()); // Only coffee2 and coffee3
+        // Assert
+        assertThat(result.getTotalSpent()).isEqualByComparingTo(BigDecimal.valueOf(45.00)); // Only coffee2 and coffee3
     }
 
     @Test
-    void getInventorySummary_ShouldReturnAllRoasters() {
-        // Given
+    @DisplayName("Should return all roasters in summary")
+    void getInventorySummary_withRoasters_returnsAllRoasters() {
+        // Arrange
         when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2, coffee3));
         when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertNotNull(result.getRoasters());
-        assertEquals(1, result.getRoasters().size());
-        assertEquals("Blue Bottle", result.getRoasters().get(0).getName());
+        // Assert
+        assertThat(result.getRoasters())
+                .isNotNull()
+                .hasSize(1)
+                .first()
+                .extracting(RoasterDto::getName)
+                .isEqualTo("Blue Bottle");
     }
 
     @Test
-    void getInventorySummary_WhenNoCoffees_ShouldReturnZeroValues() {
-        // Given
-        when(coffeeService.getAllCoffees()).thenReturn(List.of());
-        when(roasterService.getAllRoasters()).thenReturn(List.of());
+    @DisplayName("Should return zero values when no coffees exist")
+    void getInventorySummary_noCoffees_returnsZeroValues() {
+        // Arrange
+        when(coffeeService.getAllCoffees()).thenReturn(Collections.emptyList());
+        when(roasterService.getAllRoasters()).thenReturn(Collections.emptyList());
 
-        // When
+        // Act
         InventorySummaryDto result = inventoryService.getInventorySummary();
 
-        // Then
-        assertEquals(BigDecimal.ZERO, result.getTotalWeight());
-        assertEquals(0, result.getTotalBags());
-        assertEquals(BigDecimal.ZERO, result.getTotalSpent());
-        assertEquals(BigDecimal.ZERO, result.getAveragePricePerGram());
-        assertTrue(result.getLowStockCoffees().isEmpty());
-        assertTrue(result.getAgingCoffees().isEmpty());
+        // Assert
+        assertThat(result)
+                .isNotNull()
+                .satisfies(summary -> {
+                    assertThat(summary.getTotalWeight()).isEqualByComparingTo(BigDecimal.ZERO);
+                    assertThat(summary.getTotalBags()).isZero();
+                    assertThat(summary.getTotalSpent()).isEqualByComparingTo(BigDecimal.ZERO);
+                    assertThat(summary.getAveragePricePerGram()).isEqualByComparingTo(BigDecimal.ZERO);
+                    assertThat(summary.getLowStockCoffees()).isEmpty();
+                    assertThat(summary.getAgingCoffees()).isEmpty();
+                });
+    }
+
+    @Test
+    @DisplayName("Should handle multiple roasters in summary")
+    void getInventorySummary_multipleRoasters_returnsAllRoasters() {
+        // Arrange
+        RoasterDto roaster2 = new RoasterDto();
+        roaster2.setId(2L);
+        roaster2.setName("Stumptown");
+
+        when(coffeeService.getAllCoffees()).thenReturn(Arrays.asList(coffee1, coffee2));
+        when(roasterService.getAllRoasters()).thenReturn(Arrays.asList(roaster1, roaster2));
+
+        // Act
+        InventorySummaryDto result = inventoryService.getInventorySummary();
+
+        // Assert
+        assertThat(result.getRoasters())
+                .hasSize(2)
+                .extracting(RoasterDto::getName)
+                .containsExactly("Blue Bottle", "Stumptown");
+    }
+
+    @Test
+    @DisplayName("Should not include fresh coffees in aging list")
+    void getInventorySummary_freshCoffees_excludesFromAging() {
+        // Arrange
+        when(coffeeService.getAllCoffees()).thenReturn(List.of(coffee1, coffee3)); // Only fresh coffees
+        when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
+
+        // Act
+        InventorySummaryDto result = inventoryService.getInventorySummary();
+
+        // Assert
+        assertThat(result.getAgingCoffees()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should not include high stock coffees in low stock list")
+    void getInventorySummary_highStockCoffees_excludesFromLowStock() {
+        // Arrange
+        when(coffeeService.getAllCoffees()).thenReturn(List.of(coffee1, coffee3)); // Only high stock coffees
+        when(roasterService.getAllRoasters()).thenReturn(List.of(roaster1));
+
+        // Act
+        InventorySummaryDto result = inventoryService.getInventorySummary();
+
+        // Assert
+        assertThat(result.getLowStockCoffees()).isEmpty();
     }
 }
-
