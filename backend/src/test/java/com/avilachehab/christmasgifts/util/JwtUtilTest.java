@@ -1,10 +1,18 @@
 package com.avilachehab.christmasgifts.util;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtUtilTest {
 
@@ -20,160 +28,191 @@ class JwtUtilTest {
     }
 
     @Test
-    void generateToken_ShouldGenerateValidToken() {
-        // Given
+    @DisplayName("Should generate valid JWT token with three parts")
+    void generateToken_validUsername_generatesValidToken() {
+        // Arrange
         String username = "testuser";
 
-        // When
+        // Act
         String token = jwtUtil.generateToken(username);
 
-        // Then
-        assertNotNull(token);
-        assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3); // JWT has 3 parts
+        // Assert
+        assertThat(token)
+                .isNotNull()
+                .isNotEmpty()
+                .contains(".");
+        assertThat(token.split("\\.")).hasSize(3); // JWT has 3 parts
     }
 
     @Test
-    void generateToken_ShouldIncludeUsernameInToken() {
-        // Given
+    @DisplayName("Should include username in generated token")
+    void generateToken_validUsername_includesUsernameInToken() {
+        // Arrange
         String username = "testuser";
 
-        // When
+        // Act
         String token = jwtUtil.generateToken(username);
         String extractedUsername = jwtUtil.getUsernameFromToken(token);
 
-        // Then
-        assertEquals(username, extractedUsername);
+        // Assert
+        assertThat(extractedUsername).isEqualTo(username);
     }
 
     @Test
-    void getUsernameFromToken_ShouldExtractUsername() {
-        // Given
+    @DisplayName("Should extract username from valid token")
+    void getUsernameFromToken_validToken_extractsUsername() {
+        // Arrange
         String username = "admin";
         String token = jwtUtil.generateToken(username);
 
-        // When
+        // Act
         String extractedUsername = jwtUtil.getUsernameFromToken(token);
 
-        // Then
-        assertEquals(username, extractedUsername);
+        // Assert
+        assertThat(extractedUsername).isEqualTo(username);
     }
 
     @Test
-    void getUsernameFromToken_WithInvalidToken_ShouldThrowException() {
-        // Given
+    @DisplayName("Should throw exception when extracting username from invalid token")
+    void getUsernameFromToken_invalidToken_throwsException() {
+        // Arrange
         String invalidToken = "invalid.token.here";
 
-        // When/Then
-        assertThrows(Exception.class, () -> {
-            jwtUtil.getUsernameFromToken(invalidToken);
-        });
+        // Act & Assert
+        assertThatThrownBy(() -> jwtUtil.getUsernameFromToken(invalidToken))
+                .isInstanceOf(Exception.class);
     }
 
     @Test
-    void validateToken_WithValidToken_ShouldReturnTrue() {
-        // Given
+    @DisplayName("Should validate correctly formed token")
+    void validateToken_validToken_returnsTrue() {
+        // Arrange
         String username = "testuser";
         String token = jwtUtil.generateToken(username);
 
-        // When
+        // Act
         boolean isValid = jwtUtil.validateToken(token);
 
-        // Then
-        assertTrue(isValid);
+        // Assert
+        assertThat(isValid).isTrue();
     }
 
     @Test
-    void validateToken_WithInvalidToken_ShouldReturnFalse() {
-        // Given
+    @DisplayName("Should reject malformed token")
+    void validateToken_malformedToken_returnsFalse() {
+        // Arrange
         String invalidToken = "invalid.token.here";
 
-        // When
+        // Act
         boolean isValid = jwtUtil.validateToken(invalidToken);
 
-        // Then
-        assertFalse(isValid);
+        // Assert
+        assertThat(isValid).isFalse();
     }
 
     @Test
-    void validateToken_WithExpiredToken_ShouldReturnFalse() {
-        // Given
-        // Create a token with very short expiration
-        ReflectionTestUtils.setField(jwtUtil, "expiration", 1L); // 1ms
-        String username = "testuser";
-        String token = jwtUtil.generateToken(username);
-        
-        // Wait for expiration
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    @DisplayName("Should reject expired token")
+    void validateToken_expiredToken_returnsFalse() {
+        // Arrange - Create an already expired token directly
+        SecretKey key = Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8));
+        String expiredToken = Jwts.builder()
+                .subject("testuser")
+                .issuedAt(new Date(System.currentTimeMillis() - 100000)) // Issued in the past
+                .expiration(new Date(System.currentTimeMillis() - 1000)) // Expired 1 second ago
+                .signWith(key)
+                .compact();
 
-        // When
-        boolean isValid = jwtUtil.validateToken(token);
+        // Act
+        boolean isValid = jwtUtil.validateToken(expiredToken);
 
-        // Then
-        assertFalse(isValid);
-        
-        // Reset expiration
-        ReflectionTestUtils.setField(jwtUtil, "expiration", TEST_EXPIRATION);
+        // Assert
+        assertThat(isValid).isFalse();
     }
 
     @Test
-    void validateToken_WithNullToken_ShouldReturnFalse() {
-        // When
+    @DisplayName("Should return false for null token")
+    void validateToken_nullToken_returnsFalse() {
+        // Act
         boolean isValid = jwtUtil.validateToken(null);
 
-        // Then
-        assertFalse(isValid);
+        // Assert
+        assertThat(isValid).isFalse();
     }
 
     @Test
-    void validateToken_WithEmptyToken_ShouldReturnFalse() {
-        // When
+    @DisplayName("Should return false for empty token")
+    void validateToken_emptyToken_returnsFalse() {
+        // Act
         boolean isValid = jwtUtil.validateToken("");
 
-        // Then
-        assertFalse(isValid);
+        // Assert
+        assertThat(isValid).isFalse();
     }
 
     @Test
-    void generateToken_WithDifferentUsernames_ShouldGenerateDifferentTokens() {
-        // Given
+    @DisplayName("Should generate different tokens for different usernames")
+    void generateToken_differentUsernames_generatesDifferentTokens() {
+        // Arrange
         String username1 = "user1";
         String username2 = "user2";
 
-        // When
+        // Act
         String token1 = jwtUtil.generateToken(username1);
         String token2 = jwtUtil.generateToken(username2);
 
-        // Then
-        assertNotEquals(token1, token2);
+        // Assert
+        assertThat(token1).isNotEqualTo(token2);
     }
 
     @Test
-    void generateToken_WithSameUsername_ShouldExtractSameUsername() {
-        // Given
+    @DisplayName("Should extract same username from tokens generated at different times")
+    void generateToken_sameUsernameDifferentTimes_extractsSameUsername() {
+        // Arrange
         String username = "user1";
 
-        // When
+        // Act
         String token1 = jwtUtil.generateToken(username);
-        // Small delay to ensure different issuedAt
-        try {
-            Thread.sleep(100); // Increased delay to ensure different timestamp
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
         String token2 = jwtUtil.generateToken(username);
 
-        // Then
-        // Both tokens should extract the same username
-        assertEquals(username, jwtUtil.getUsernameFromToken(token1));
-        assertEquals(username, jwtUtil.getUsernameFromToken(token2));
-        // Both tokens should be valid
-        assertTrue(jwtUtil.validateToken(token1));
-        assertTrue(jwtUtil.validateToken(token2));
+        // Assert
+        assertThat(jwtUtil.getUsernameFromToken(token1)).isEqualTo(username);
+        assertThat(jwtUtil.getUsernameFromToken(token2)).isEqualTo(username);
+        assertThat(jwtUtil.validateToken(token1)).isTrue();
+        assertThat(jwtUtil.validateToken(token2)).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should reject token signed with different secret")
+    void validateToken_differentSecret_returnsFalse() {
+        // Arrange - Create token with different secret
+        String differentSecret = "different-secret-key-for-testing-purposes-must-be-long-enough-for-hmac-sha256";
+        SecretKey differentKey = Keys.hmacShaKeyFor(differentSecret.getBytes(StandardCharsets.UTF_8));
+        String tokenWithDifferentSecret = Jwts.builder()
+                .subject("testuser")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 86400000))
+                .signWith(differentKey)
+                .compact();
+
+        // Act
+        boolean isValid = jwtUtil.validateToken(tokenWithDifferentSecret);
+
+        // Assert
+        assertThat(isValid).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should handle special characters in username")
+    void generateToken_usernameWithSpecialChars_generatesValidToken() {
+        // Arrange
+        String username = "user@example.com";
+
+        // Act
+        String token = jwtUtil.generateToken(username);
+        String extractedUsername = jwtUtil.getUsernameFromToken(token);
+
+        // Assert
+        assertThat(extractedUsername).isEqualTo(username);
+        assertThat(jwtUtil.validateToken(token)).isTrue();
     }
 }
-
