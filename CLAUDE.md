@@ -64,3 +64,8 @@ frontend/src/
 - H2 in-memory DB (resets on restart)
 - H2 console: `http://localhost:8080/h2-console`
 - Default credentials: admin/admin123
+
+## CI/CD
+
+- GitHub Actions is configured for this repository
+- CI workflows run on push and pull requests
